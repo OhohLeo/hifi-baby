@@ -1,0 +1,14 @@
+[Unit]
+Description=HiFi Baby Application Service
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=/home/hifi-baby/hifi-baby.default
+ExecStart=/home/hifi-baby/hifi-baby
+User=hifi-baby
+Restart=on-failure
+# Spécifiez ici d'autres directives de sécurité ou de configuration selon vos besoins
+
+[Install]
+WantedBy=multi-user.target

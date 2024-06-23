@@ -27,6 +27,7 @@ type Track struct {
 	Path   string `json:"path"`   // Path is the file path to the audio track.
 	Format string `json:"format"` // Format is the audio format of the track (e.g., mp3, wav).
 	Index  int    `json:"index"`  // Index is the position of the track in the track list.
+	Name   string `json:"name"`   // Name is the file name of the audio track.
 }
 
 // NewTrack creates a new Track instance from a given file path and index.
@@ -50,8 +51,11 @@ func NewTrack(path string, index int) (*Track, error) {
 		return nil, fmt.Errorf("unsupported file format: %s", ext)
 	}
 
-	// Return a new Track instance with the determined path, format, and index.
-	return &Track{Path: path, Format: format, Index: index}, nil
+	// Extract the file name from the path.
+	name := filepath.Base(path)
+
+	// Return a new Track instance with the determined path, format, index, and name.
+	return &Track{Path: path, Format: format, Index: index, Name: name}, nil
 }
 
 // Open opens the track file.

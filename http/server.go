@@ -2,31 +2,54 @@ package http
 
 import (
 	"encoding/json"
-	"net/http"
+	"net/http" // Ensure os is imported
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/rs/zerolog/log"
 
 	"github.com/OhohLeo/hifi-baby/audio"
+	"github.com/OhohLeo/hifi-baby/stored"
 )
+
+type Config struct {
+	ServerURL    string `env:"SERVER_URL,default=localhost:3000"`
+	ServerUIPath string `env:"SERVER_UI_PATH,default=dist"`
+}
 
 type Server struct {
 	audio     *audio.Audio
 	router    *chi.Mux
 	serverURL string // Use ServerURL to start the server
+	config    Config
+	stored    *stored.Stored
 }
 
 // NewServer creates a new Server instance with routes configured for audio management.
-func NewServer(audio *audio.Audio, serverURL string) *Server {
+func NewServer(audio *audio.Audio, config Config, stored *stored.Stored) *Server {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"*"},                            // Accept requests from all origins
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"}, // Specify allowed methods
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300, // Maximum value of the Access-Control-Max-Age header.
+	}))
+
+	// Serve static files from 'dist' directory
+	FileServer(r, "/", config.ServerUIPath)
 
 	server := &Server{
 		audio:     audio,
 		router:    r,
-		serverURL: serverURL,
+		serverURL: config.ServerURL,
+		config:    config,
+		stored:    stored,
 	}
 
 	r.Route("/audio", func(r chi.Router) {
@@ -37,12 +60,37 @@ func NewServer(audio *audio.Audio, serverURL string) *Server {
 		r.Post("/resume", server.resumeTrack)          // Resume the current track
 		r.Post("/stop", server.stopTrack)              // Stop the current track
 		r.Get("/tracks", server.listTracks)            // List all tracks
-		r.Get("/current", server.currentTrack)         // Get the current track
+		r.Get("/state", server.currentPlayerState)     // Get the current player state
 		r.Post("/volume/up", server.increaseVolume)    // Increase volume
 		r.Post("/volume/down", server.decreaseVolume)  // Decrease volume
+		r.Post("/volume/mute", server.muteVolume)      // Mute volume
 	})
 
+	r.Get("/stored", server.getStoredConfig)
+	r.Put("/stored", server.updateStoredConfig)
+
 	return server
+}
+
+// FileServer conveniently sets up a http.FileServer handler to serve
+// static files from a http.FileSystem.
+func FileServer(r chi.Router, path string, root string) {
+	if strings.ContainsAny(path, "{}*") {
+		panic("FileServer does not permit URL parameters.")
+	}
+
+	fs := http.FileServer(http.Dir(root))
+
+	if path != "/" && path[len(path)-1] != '/' {
+		r.Get(path, http.RedirectHandler(path+"/", http.StatusMovedPermanently).ServeHTTP)
+		path += "/"
+	}
+	path += "*"
+
+	r.Get(path, func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = chi.URLParam(r, "*")
+		fs.ServeHTTP(w, r)
+	})
 }
 
 // Example of a method to start the HTTP server using the Router in Server
@@ -115,13 +163,8 @@ func (s *Server) listTracks(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(s.audio.Tracks())
 }
 
-func (s *Server) currentTrack(w http.ResponseWriter, r *http.Request) {
-	currentTrack := s.audio.GetCurrentTrack()
-	if currentTrack != nil {
-		json.NewEncoder(w).Encode(currentTrack)
-	} else {
-		http.Error(w, "No track is currently playing", http.StatusNotFound)
-	}
+func (s *Server) currentPlayerState(w http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(w).Encode(s.audio.GetPlayerState())
 }
 
 func (s *Server) increaseVolume(w http.ResponseWriter, r *http.Request) {
@@ -131,5 +174,43 @@ func (s *Server) increaseVolume(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) decreaseVolume(w http.ResponseWriter, r *http.Request) {
 	s.audio.DecreaseVolume()
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) muteVolume(w http.ResponseWriter, r *http.Request) {
+	enableParam := r.URL.Query().Get("enable")
+	if enableParam != "true" && enableParam != "false" {
+		http.Error(w, "Query parameter 'enable' must be 'true' or 'false'", http.StatusBadRequest)
+		return
+	}
+	s.audio.Mute(enableParam == "true")
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) getStoredConfig(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// Encode the stored configuration to the response
+	if err := json.NewEncoder(w).Encode(s.stored); err != nil {
+		http.Error(w, "Failed to encode stored configuration: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) updateStoredConfig(w http.ResponseWriter, r *http.Request) {
+	var newStored stored.Stored
+
+	if err := json.NewDecoder(r.Body).Decode(&newStored); err != nil {
+		http.Error(w, "Failed to decode stored configuration: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Encode the updated configuration back to JSON
+	if err := s.stored.Update(&newStored); err != nil {
+		http.Error(w, "Failed to update stored configuration: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 }

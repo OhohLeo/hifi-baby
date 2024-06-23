@@ -17,30 +17,45 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const (
-	VolumeStep = 0.5  // Pas d'augmentation ou de diminution du volume
-	MaxVolume  = 2.0  // Volume maximal
-	MinVolume  = -5.0 // Volume minimal
-)
+type Config struct {
+	StoragePath string `env:"STORAGE_PATH,default=tracks"`
+}
+
+type StoredConfig struct {
+	BaseVolume    float64 `json:"base_volume"`
+	DefaultVolume float64 `json:"default_volume"`
+	MinVolume     float64 `json:"min_volume"`
+	MaxVolume     float64 `json:"max_volume"`
+	VolumeStep    float64 `json:"volume_step"`
+	SilentEnabled bool    `json:"silent_enabled"`
+}
 
 // Audio manages a list of audio tracks, playback state, volume control, and storage path.
 type Audio struct {
-	tracks                []*Track        // tracks holds a slice of all available tracks.
-	activeStream          *beep.Ctrl      // ctrlStream controls the pause and resume of the active stream
-	currentlyPlayingTrack *Track          // currentlyPlayingTrack points to the track that is currently being played.
-	volume                *effects.Volume // volume controls the volume of the playback.
-	storagePath           string          // storagePath is the base path where audio files are stored.
-	playRequests          chan int        // playRequests is a channel for play requests
-	stopChan              chan bool       // stopChan is a channel to signal stop
+	tracks       []*Track        // tracks holds a slice of all available tracks.
+	activeStream *beep.Ctrl      // ctrlStream controls the pause and resume of the active stream
+	volume       *effects.Volume // volume controls the volume of the playback.
+	storagePath  string          // storagePath is the base path where audio files are stored.
+	playRequests chan int        // playRequests is a channel for play requests
+	stopChan     chan bool       // stopChan is a channel to signal stop
+	playerState  PlayerState     // playerState holds the current state of the audio player.
+	storedConfig StoredConfig    // storedConfig holds the stored configuration for the audio player.
 }
 
 // NewAudio creates a new Audio instance with a given list of track paths and a storage path.
-func NewAudio(storagePath string) (*Audio, error) {
+func NewAudio(config Config, storedConfig StoredConfig) (*Audio, error) {
+	storagePath := config.StoragePath
 	audio := &Audio{
-		tracks:       []*Track{},
+		tracks: []*Track{},
+		volume: &effects.Volume{
+			Base:   storedConfig.BaseVolume,
+			Volume: storedConfig.DefaultVolume,
+			Silent: storedConfig.SilentEnabled,
+		},
 		storagePath:  storagePath,
 		playRequests: make(chan int),
 		stopChan:     make(chan bool),
+		storedConfig: storedConfig,
 	}
 
 	// Ensure the directory exists or create it
@@ -75,7 +90,7 @@ func NewAudio(storagePath string) (*Audio, error) {
 
 	// Initialisation du haut-parleur avec le format décodé
 	sampleRate := beep.SampleRate(44100)
-	if err := speaker.Init(sampleRate, sampleRate.N(time.Second/10)); err != nil {
+	if err := speaker.Init(sampleRate, sampleRate.N(time.Second/5)); err != nil {
 		return nil, fmt.Errorf("speaker issue : %v", err)
 	}
 
@@ -137,7 +152,7 @@ func (a *Audio) RemoveTrack(index int) error {
 	trackToRemove := a.tracks[index]
 
 	// Stop playback if the track to be removed is currently playing.
-	if a.activeStream != nil && trackToRemove == a.currentlyPlayingTrack {
+	if a.activeStream != nil && trackToRemove == a.playerState.CurrentTrack {
 		a.Stop()
 	}
 
@@ -151,9 +166,9 @@ func (a *Audio) RemoveTrack(index int) error {
 	return nil
 }
 
-// GetCurrentTrack returns the currently playing track.
-func (a *Audio) GetCurrentTrack() *Track {
-	return a.currentlyPlayingTrack // Accès direct au champ privé
+// GetPlayerState returns the current state of the audio player.
+func (a *Audio) GetPlayerState() PlayerState {
+	return a.playerState
 }
 
 // Tracks returns a slice of all available tracks.
@@ -173,6 +188,9 @@ func (a *Audio) PlayTrack(index int) {
 	if a.activeStream != nil && !a.activeStream.Paused {
 		a.Stop()
 	}
+
+	log.Info().Msgf("Playing track %d: %s", index, a.tracks[index].Path)
+
 	// Send the play request for the new track
 	a.playRequests <- index
 }
@@ -182,10 +200,10 @@ func (a *Audio) Pause() {
 	if a.activeStream == nil || a.activeStream.Paused {
 		return
 	}
-
 	speaker.Lock()
+	defer speaker.Unlock()
 	a.activeStream.Paused = true
-	speaker.Unlock()
+	a.playerState.IsPlaying = false
 }
 
 // Resume the playback of the currently paused track if it is paused.
@@ -193,38 +211,41 @@ func (a *Audio) Resume() {
 	if a.activeStream == nil || !a.activeStream.Paused {
 		return
 	}
-
 	speaker.Lock()
+	defer speaker.Unlock()
 	a.activeStream.Paused = false
-	speaker.Unlock()
+	a.playerState.IsPlaying = true
 }
 
 // IncreaseVolume increases the audio volume.
 func (a *Audio) IncreaseVolume() {
-	if a.volume == nil {
-		return
-	}
-
 	speaker.Lock()
-	a.volume.Volume += VolumeStep
-	if a.volume.Volume > MaxVolume {
-		a.volume.Volume = MaxVolume
+	defer speaker.Unlock()
+
+	a.volume.Volume += a.storedConfig.VolumeStep
+	if a.volume.Volume > a.storedConfig.MaxVolume {
+		a.volume.Volume = a.storedConfig.MaxVolume
 	}
-	speaker.Unlock()
 }
 
 // DecreaseVolume decreases the audio volume.
 func (a *Audio) DecreaseVolume() {
-	if a.volume == nil {
-		return
-	}
-
 	speaker.Lock()
-	a.volume.Volume -= VolumeStep
-	if a.volume.Volume < MinVolume {
-		a.volume.Volume = MinVolume
+	defer speaker.Unlock()
+
+	a.volume.Volume -= a.storedConfig.VolumeStep
+	if a.volume.Volume < a.storedConfig.MinVolume {
+		a.volume.Volume = a.storedConfig.MinVolume
 	}
-	speaker.Unlock()
+}
+
+// Mute mutes the currently playing audio.
+func (a *Audio) Mute(enable bool) {
+	speaker.Lock()
+	defer speaker.Unlock()
+
+	a.volume.Silent = enable
+	a.playerState.IsMuted = enable
 }
 
 func (a *Audio) Run() {
@@ -260,17 +281,16 @@ func (a *Audio) playTrack(index int) error {
 	defer streamer.Close()
 
 	a.activeStream = &beep.Ctrl{Streamer: streamer, Paused: false}
-	a.currentlyPlayingTrack = track
-	a.volume = &effects.Volume{
-		Streamer: a.activeStream,
-		Base:     2,
-		Volume:   0,
-		Silent:   false,
-	}
+	a.volume.Streamer = a.activeStream
+	a.playerState.InitializeTrack(
+		track,
+		format.SampleRate.D(streamer.Position()).Round(time.Second),
+		format.SampleRate.D(streamer.Len()).Round(time.Second),
+	)
 	defer func() {
 		a.activeStream = nil
-		a.currentlyPlayingTrack = nil
-		a.volume = nil
+		a.volume.Streamer = nil
+		a.playerState.StopTrack()
 	}()
 
 	log.Info().Msgf("Playing track: %s\n", track.Path)
@@ -285,13 +305,15 @@ func (a *Audio) playTrack(index int) error {
 	for {
 		select {
 		case <-a.stopChan:
+			a.playerState.StopTrack()
 			log.Info().Msgf("Stopped playing track: %s\n", track.Path)
 			return nil
 		case <-time.After(time.Second):
 			speaker.Lock()
 			// Here, you must ensure that your streamer implements the Position method if you want to use it
 			if posStreamer, ok := streamer.(interface{ Position() int }); ok {
-				log.Info().Msgf("Position: %s", format.SampleRate.D(posStreamer.Position()).Round(time.Second))
+				elapsedTime := format.SampleRate.D(posStreamer.Position()).Round(time.Second)
+				log.Info().Msgf("Position: %s", elapsedTime)
 			} else {
 				log.Error().Msg("The streamer does not support the Position method")
 			}

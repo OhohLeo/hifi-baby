@@ -2,11 +2,17 @@ package app
 
 import (
 	"github.com/Netflix/go-env"
+
+	"github.com/OhohLeo/hifi-baby/audio"
+	"github.com/OhohLeo/hifi-baby/http"
 )
 
 type Config struct {
-	ServerURL   string `env:"SERVER_URL,default=localhost:3000"`
-	StoragePath string `env:"STORAGE_PATH,default=tracks"`
+	Server http.Config
+	Audio  audio.Config
+
+	LogLevel         string `env:"LOG_LEVEL,default=info"`
+	StoredConfigPath string `env:"STORED_CONFIG_PATH,default=stored_config.json"`
 }
 
 func NewConfig() (*Config, error) {
@@ -15,5 +21,6 @@ func NewConfig() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &cfg, nil
 }
