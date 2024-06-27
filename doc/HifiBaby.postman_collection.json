@@ -1,0 +1,250 @@
+{
+	"info": {
+		"_postman_id": "02b201d9-8e85-4a6c-ba46-0902e315f499",
+		"name": "Hifi Baby",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "6533789"
+	},
+	"item": [
+		{
+			"name": "audio",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/home/lmartin/Musique/01_Primula.wav"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:3000/audio",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"audio"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "audio/tracks",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/audio/tracks",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"audio",
+						"tracks"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "audio/state",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/audio/current",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"audio",
+						"current"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "audio/play",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/audio/play/2",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"audio",
+						"play",
+						"2"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "audio/pause",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/audio/pause",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"audio",
+						"pause"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "audio/resume",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/audio/resume",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"audio",
+						"resume"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "audio/stop",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/audio/stop",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"audio",
+						"stop"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "audio/volume/up",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/audio/volume/up",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"audio",
+						"volume",
+						"up"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "audio/volume/down",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/audio/volume/down",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"audio",
+						"volume",
+						"down"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "stored",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/audio/tracks",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"audio",
+						"tracks"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "stored",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"audio\": {\n        \"base_volume\": 0.0,\n        \"default_volume\": 0.75,\n        \"min_volume\": 0.1,\n        \"max_volume\": 1,\n        \"volume_step\": 0.05,\n        \"silent_enabled\": true\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/stored",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"stored"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

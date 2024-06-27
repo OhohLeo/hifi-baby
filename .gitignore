@@ -3,3 +3,5 @@ tracks
 hifi-baby
 ui/dist
 ui/node_modules
+*.mp3
+*.code-workspace
