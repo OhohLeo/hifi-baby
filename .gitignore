@@ -1,3 +1,5 @@
 tracks
 .*~
 hifi-baby
+ui/dist
+ui/node_modules

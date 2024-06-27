@@ -1,0 +1,33 @@
+@import 'primeicons/primeicons.css';
+
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+body {
+  background-color: #8b0000; /* Rouge foncé pour un effet cinéma */
+  color: #ffffff; /* Texte blanc pour contraster avec le fond sombre */
+}
+
+button {
+  background: none;
+  border: 2px solid rgb(177, 177, 177); /* Ajoute un contour noir */
+  color: white; /* Couleur du texte */
+  font-size: 15px;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px; /* Arrondit les coins */
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+button:hover {
+  background-color: #ffffff;
+  color: #8b0000;
+}
+
+button:checked {
+  background-color: #ffffff;
+  color: #8b0000;
+}
