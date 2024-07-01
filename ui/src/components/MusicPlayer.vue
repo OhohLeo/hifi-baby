@@ -43,7 +43,6 @@ const decreaseVolume = async () => {
 
 <template>
   <div class="flex justify-center items-center w-screen">
-    <!-- Conteneur pour les contrôles de lecture -->
     <div class="controls">
       <button @click="togglePlayPause" :disabled="musicPlayer.isStopped">
         <i :class="musicPlayer.isPlaying ? 'pi pi-pause' : 'pi pi-play'"></i>
@@ -61,9 +60,5 @@ const decreaseVolume = async () => {
         <i class="pi pi-plus"></i>
       </button>
     </div>
-  </div>
-  <!-- Conteneur pour les informations de la piste -->
-  <div class="p-10 text-xl flex justify-center items-center w-screen">
-    {{ musicPlayer.track ? musicPlayer.track.name : 'No track playing' }}
   </div>
 </template>

@@ -13,7 +13,7 @@ const audioService = {
   addTrack(file: File) {
     const formData = new FormData()
     formData.append('file', file)
-    return apiClient.put('/', formData, {
+    return apiClient.post('/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }

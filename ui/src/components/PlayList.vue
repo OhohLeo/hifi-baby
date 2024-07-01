@@ -1,10 +1,9 @@
 <script setup lang="ts">
+import { toRaw } from 'vue'
+import DataView from 'primevue/dataview'; // Import DataView
 import { usePlaylistStore } from '../stores/PlayList'
 import { useMusicPlayerStore } from '../stores/MusicPlayer'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import audioService from '../services/api' // Import du service API
-import { toRaw } from 'vue'
+import audioService from '../services/api'
 
 const playlistStore = usePlaylistStore()
 const musicPlayerStore = useMusicPlayerStore()
@@ -26,37 +25,29 @@ const removeTrack = async (trackIndex: number) => {
 </script>
 
 <template>
-  <DataTable
-    class="text-center text-lg"
-    :value="playlistStore.sortedTracks"
-    paginator
-    paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-    :rows="30"
-    tableStyle="min-width: 100%"
-    style="width: 100%"
-  >
-    <Column style="width: 25%; padding-bottom: 60px">
-      <template #body="track">
-        {{
-          musicPlayerStore.isCurrentTrack(toRaw(track.data).index)
-            ? !musicPlayerStore.isPlaying
-              ? '||'
-              : '➤'
-            : ''
-        }}
-      </template>
-    </Column>
-    <Column header="Nom du morceau" style="width: 50%">
-      <template #body="track">
-        <span @click="playTrack(track.index)">{{ toRaw(track.data).name }}</span>
-      </template>
-    </Column>
-    <Column style="width: 25%">
-      <template #body="track">
-        <button class="delete-button" @click.stop="removeTrack(track.index)">
-          <i class="pi pi-trash"></i>
-        </button>
-      </template>
-    </Column>
-  </DataTable>
+  <DataView :value="playlistStore.sortedTracks">
+    <template #list="slotProps">
+      <div class="grid grid-nogutter">
+        <div v-for="(track, index) in slotProps.items" :key="index" class="col-12">
+          <div class="flex flex-col sm:flex-row sm:items-center p-4 gap-3" :class="{ 'border-t border-surface-200 dark:border-surface-700': index !== 0 }">
+            <div class="flex flex-row justify-between items-center flex-1 gap-4">
+              <span class="block xl:block mx-auto rounded-md text-2xl">
+                {{
+                  musicPlayerStore.isCurrentTrack(toRaw(track).index)
+                    ? !musicPlayerStore.isPlaying
+                      ? '||'
+                      : '➤'
+                    : ''
+                }}
+              </span>
+              <span class="font-medium  w-full text-secondary text-xl" @click="playTrack(track.index)">{{ toRaw(track).name }}</span>
+              <button class="delete-button w-20" @click.stop="removeTrack(track.index)">
+                <i class="pi pi-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+  </DataView>
 </template>

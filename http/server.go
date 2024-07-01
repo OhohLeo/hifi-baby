@@ -53,7 +53,7 @@ func NewServer(audio *audio.Audio, config Config, stored *stored.Stored) *Server
 	}
 
 	r.Route("/audio", func(r chi.Router) {
-		r.Put("/", server.addTrack)                    // Add a track
+		r.Post("/", server.addTrack)                   // Add a track
 		r.Delete("/{trackIndex}", server.removeTrack)  // Remove a track
 		r.Post("/play/{trackIndex}", server.playTrack) // Play a track
 		r.Post("/pause", server.pauseTrack)            // Pause the current track

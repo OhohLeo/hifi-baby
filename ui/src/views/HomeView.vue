@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import MusicPlayer from '../components/MusicPlayer.vue'
+import BottomMenu from '../components/BottomMenu.vue'
 import PlayList from '../components/PlayList.vue'
+import TopMenu from '../components/TopMenu.vue'
 </script>
 
 <template>
   <main>
-    <div class="m-10 text-center text-3xl">Hifi Baby ❤️</div>
-    <MusicPlayer />
+    <TopMenu />
     <PlayList />
+    <BottomMenu />
   </main>
 </template>
