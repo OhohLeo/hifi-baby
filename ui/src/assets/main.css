@@ -4,6 +4,17 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+@layer utilities {
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none; 
+    }
+}
+
 body {
   background-color: #8b0000; /* Rouge foncé pour un effet cinéma */
   color: #ffffff; /* Texte blanc pour contraster avec le fond sombre */

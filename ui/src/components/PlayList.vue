@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { toRaw } from 'vue'
 import DataView from 'primevue/dataview'; // Import DataView
+import FileUpload from 'primevue/fileupload';
 import { usePlaylistStore } from '../stores/PlayList'
 import { useMusicPlayerStore } from '../stores/MusicPlayer'
 import audioService from '../services/api'
+import { baseURL } from '../services/api';
 
 const playlistStore = usePlaylistStore()
 const musicPlayerStore = useMusicPlayerStore()
 
 playlistStore.fetchTracks()
+
+function onUpload(event: any) {
+    playlistStore.fetchTracks()
+}
 
 const playTrack = async (trackIndex: number) => {
   const track = playlistStore.tracks.find((t) => t.index === trackIndex)
@@ -25,29 +31,46 @@ const removeTrack = async (trackIndex: number) => {
 </script>
 
 <template>
-  <DataView :value="playlistStore.sortedTracks">
-    <template #list="slotProps">
-      <div class="grid grid-nogutter">
-        <div v-for="(track, index) in slotProps.items" :key="index" class="col-12">
-          <div class="flex flex-col sm:flex-row sm:items-center p-4 gap-3" :class="{ 'border-t border-surface-200 dark:border-surface-700': index !== 0 }">
-            <div class="flex flex-row justify-between items-center flex-1 gap-4">
-              <span class="block xl:block mx-auto rounded-md text-2xl">
-                {{
-                  musicPlayerStore.isCurrentTrack(toRaw(track).index)
-                    ? !musicPlayerStore.isPlaying
-                      ? '||'
-                      : '➤'
-                    : ''
-                }}
-              </span>
-              <span class="font-medium  w-full text-secondary text-xl" @click="playTrack(track.index)">{{ toRaw(track).name }}</span>
-              <button class="delete-button w-20" @click.stop="removeTrack(track.index)">
-                <i class="pi pi-trash"></i>
-              </button>
+  <div class="mt-20 mb-44">
+    <DataView :value="playlistStore.sortedTracks">
+      <template #list="slotProps">
+        <div class="grid grid-nogutter">
+          <div class="w-full flex justify-center items-center">
+            <FileUpload 
+                class="w-52"
+                v-bind:url="baseURL" 
+                mode="basic"  
+                name="file" 
+                accept="audio/*" 
+                chooseLabel="Add audio files"
+                :showUploadButton="false"
+                :showCancelButton="false"
+                :auto="true"
+                :multiple="true"
+                @upload="onUpload">
+              </FileUpload>
+          </div>
+          <div v-for="(track, index) in slotProps.items" :key="index" class="col-6">
+            <div class="flex flex-col sm:flex-row sm:items-center p-4 gap-3" :class="{ 'border-t border-surface-200 dark:border-surface-700': index !== 0 }">
+              <div class="flex flex-row justify-between items-center flex-1 gap-4">
+                <span class="block xl:block mx-auto rounded-md text-2xl">
+                  {{
+                    musicPlayerStore.isCurrentTrack(toRaw(track).index)
+                      ? !musicPlayerStore.isPlaying
+                        ? '||'
+                        : '➤'
+                      : ''
+                  }}
+                </span>
+                <span class="font-medium  w-full text-secondary text-1xl" @click="playTrack(track.index)">{{ toRaw(track).name }}</span>
+                <button class="delete-button w-20" @click.stop="removeTrack(track.index)">
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </template>
-  </DataView>
+      </template>
+    </DataView>
+  </div>  
 </template>

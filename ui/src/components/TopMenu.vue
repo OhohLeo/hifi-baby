@@ -6,7 +6,8 @@ const musicPlayer = useMusicPlayerStore()
 </script>
 
 <template>
-    <Menubar class="p-7 border-b-2 border-gray-300 border-0 bg-red-900">
+    <div class="fixed top-0 w-full">    
+    <Menubar class="p-4 border-b-2 border-gray-300 border-0 bg-red-900">
         <template #start>
             <div class="text-left text-2xl font-bold">Hifi Baby ❤️</div>
         </template>
@@ -16,4 +17,11 @@ const musicPlayer = useMusicPlayerStore()
             </div>
         </template>
     </Menubar>
+    </div>
 </template>
+
+<style>
+#layout-menubar {
+    position: fixed;
+}
+</style>

@@ -5,7 +5,7 @@ import TopMenu from '../components/TopMenu.vue'
 </script>
 
 <template>
-  <main>
+  <main class="no-scrollbar">
     <TopMenu />
     <PlayList />
     <BottomMenu />
