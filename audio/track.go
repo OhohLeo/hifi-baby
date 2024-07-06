@@ -7,13 +7,17 @@ import (
 	"strings"
 
 	"github.com/gopxl/beep"
+	"github.com/gopxl/beep/flac"
 	"github.com/gopxl/beep/mp3"
+	"github.com/gopxl/beep/vorbis"
 	"github.com/gopxl/beep/wav"
 )
 
 var supportedFormats = map[string]struct{}{
-	".mp3": {},
-	".wav": {},
+	".flac": {},
+	".ogg":  {},
+	".mp3":  {},
+	".wav":  {},
 }
 
 // isSupportedFormat checks if the file extension is supported for audio tracks.
@@ -42,6 +46,10 @@ func NewTrack(path string, index int) (*Track, error) {
 	ext := strings.ToLower(filepath.Ext(path))
 	format := ""
 	switch ext {
+	case ".flac":
+		format = "flac"
+	case ".ogg":
+		format = "ogg"
 	case ".mp3":
 		format = "mp3"
 	case ".wav":
@@ -75,6 +83,10 @@ func (t *Track) Decode(f *os.File) (beep.StreamSeekCloser, beep.Format, error) {
 	}
 
 	switch t.Format {
+	case "flac":
+		return flac.Decode(f)
+	case "ogg":
+		return vorbis.Decode(f)
 	case "mp3":
 		return mp3.Decode(f)
 	case "wav":
