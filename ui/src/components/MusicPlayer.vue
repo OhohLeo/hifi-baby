@@ -9,10 +9,10 @@ musicPlayer.fetchCurrentTrack()
 let ws: WebSocket // WebSocket instance
 
 onMounted(() => {
+  const refreshInterval = parseInt(import.meta.env.VITE_APP_REFRESH_INTERVAL, 10) || 1000;
   const intervalId = setInterval(async () => {
     musicPlayer.fetchCurrentTrack()
-  }, 1000)
-
+  }, refreshInterval)
   onUnmounted(() => {
     clearInterval(intervalId)
   })

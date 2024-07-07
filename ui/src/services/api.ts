@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-export const baseURL = 'http://192.168.1.76:3000/audio' // Export de la baseURL
+export const baseURL = import.meta.env.VITE_APP_BASE_URL // Export de la baseURL
 
 const apiClient = axios.create({
   baseURL: baseURL,
