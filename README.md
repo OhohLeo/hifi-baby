@@ -28,11 +28,22 @@ L'API est disponible au format postman : [doc/HifiBaby.postman_collection.json](
 
 Variables d'environnements
 
-| Module | Variable | Description | Valeur par défaut |
-|----------|---------------------|-------------------------------------------|----------------------------|
-| Général | LOG_LEVEL | Niveau de log | info |
-| Général | STORED_CONFIG_PATH| Chemin vers le fichier de configuration | stored_config.json |
-| Audio | STORAGE_PATH | Chemin de stockage des pistes audio | tracks |
+| Module    | Variable          | Description                                | Valeur par défaut          |
+|-----------|-------------------|--------------------------------------------|----------------------------|
+| Général   | LOG_LEVEL         | Niveau de log                              | info                       |
+| Général   | STORED_CONFIG_PATH| Chemin vers le fichier de configuration    | stored_config.json         |
+| Audio     | STORAGE_PATH      | Chemin de stockage des pistes audio        | tracks                     |
+| Serveur   | SERVER_URL        | URL du serveur                             | localhost:3000             |
+| Serveur   | SERVER_UI_PATH    | Chemin vers l'interface utilisateur        | dist                       |
+| Base de données | DATABASE_PATH | Chemin vers le fichier de la base de données | ./hifi-baby.db          |
+| Base de données | DATABASE_TIMEOUT | Délai d'expiration pour la base de données | 10s                     |
+
+### Requirements
+
+```bash
+# To enable databases : install sqlite3
+sudo apt install sqlite3
+```
 
 ### Cross compilation pour Raspberry-pi
 

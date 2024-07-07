@@ -5,6 +5,7 @@ import (
 	"net/http" // Ensure os is imported
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -12,6 +13,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/OhohLeo/hifi-baby/audio"
+	"github.com/OhohLeo/hifi-baby/sql"
 	"github.com/OhohLeo/hifi-baby/stored"
 )
 
@@ -26,10 +28,16 @@ type Server struct {
 	serverURL string // Use ServerURL to start the server
 	config    Config
 	stored    *stored.Stored
+	database  *sql.Database
 }
 
 // NewServer creates a new Server instance with routes configured for audio management.
-func NewServer(audio *audio.Audio, config Config, stored *stored.Stored) *Server {
+func NewServer(
+	audio *audio.Audio,
+	config Config,
+	stored *stored.Stored,
+	database *sql.Database,
+) *Server {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(cors.Handler(cors.Options{
@@ -50,20 +58,23 @@ func NewServer(audio *audio.Audio, config Config, stored *stored.Stored) *Server
 		serverURL: config.ServerURL,
 		config:    config,
 		stored:    stored,
+		database:  database,
 	}
 
 	r.Route("/audio", func(r chi.Router) {
-		r.Post("/", server.addTrack)                   // Add a track
-		r.Delete("/{trackIndex}", server.removeTrack)  // Remove a track
-		r.Post("/play/{trackIndex}", server.playTrack) // Play a track
-		r.Post("/pause", server.pauseTrack)            // Pause the current track
-		r.Post("/resume", server.resumeTrack)          // Resume the current track
-		r.Post("/stop", server.stopTrack)              // Stop the current track
-		r.Get("/tracks", server.listTracks)            // List all tracks
-		r.Get("/state", server.currentPlayerState)     // Get the current player state
-		r.Post("/volume/up", server.increaseVolume)    // Increase volume
-		r.Post("/volume/down", server.decreaseVolume)  // Decrease volume
-		r.Post("/volume/mute", server.muteVolume)      // Mute volume
+		r.Post("/", server.addTrack)                              // Add a track
+		r.Delete("/{trackIndex}", server.removeTrack)             // Remove a track
+		r.Post("/play/{trackIndex}", server.playTrack)            // Play a track
+		r.Post("/pause", server.pauseTrack)                       // Pause the current track
+		r.Post("/resume", server.resumeTrack)                     // Resume the current track
+		r.Post("/stop", server.stopTrack)                         // Stop the current track
+		r.Get("/tracks", server.listTracks)                       // List all tracks
+		r.Get("/tracks/listened", server.listenedTracks)          // List all listened tracks
+		r.Get("/tracks/most-listened", server.mostListenedTracks) // Get the most listened tracks
+		r.Get("/state", server.currentPlayerState)                // Get the current player state
+		r.Post("/volume/up", server.increaseVolume)               // Increase volume
+		r.Post("/volume/down", server.decreaseVolume)             // Decrease volume
+		r.Post("/volume/mute", server.muteVolume)                 // Mute volume
 	})
 
 	r.Get("/stored", server.getStoredConfig)
@@ -161,6 +172,47 @@ func (s *Server) stopTrack(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) listTracks(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(s.audio.Tracks())
+}
+
+func (s *Server) listenedTracks(w http.ResponseWriter, r *http.Request) {
+	since := r.URL.Query().Get("since")
+	sinceTime, err := time.Parse(time.RFC3339, since)
+	if err != nil {
+		http.Error(w, "Invalid since time", http.StatusBadRequest)
+		return
+	}
+
+	listenedTracks, err := s.database.ListenedTracks(sinceTime)
+	if err != nil {
+		http.Error(w, "Failed to get listened tracks", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(listenedTracks)
+}
+
+func (s *Server) mostListenedTracks(w http.ResponseWriter, r *http.Request) {
+	since := r.URL.Query().Get("since")
+	sinceTime, err := time.Parse(time.RFC3339, since)
+	if err != nil {
+		http.Error(w, "Invalid since time", http.StatusBadRequest)
+		return
+	}
+
+	topNb := r.URL.Query().Get("topNb")
+	topNbInt, err := strconv.Atoi(topNb)
+	if err != nil {
+		http.Error(w, "Invalid topNb", http.StatusBadRequest)
+		return
+	}
+
+	mostListenedTracks, err := s.database.MostListenedTracks(sinceTime, topNbInt)
+	if err != nil {
+		http.Error(w, "Failed to get listened tracks", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(mostListenedTracks)
 }
 
 func (s *Server) currentPlayerState(w http.ResponseWriter, r *http.Request) {

@@ -6,27 +6,40 @@ import (
 	"github.com/OhohLeo/hifi-baby/audio"
 	"github.com/OhohLeo/hifi-baby/http"
 	"github.com/OhohLeo/hifi-baby/raspberry"
+	"github.com/OhohLeo/hifi-baby/sql"
 	"github.com/OhohLeo/hifi-baby/stored"
 )
 
 type App struct {
-	Server *http.Server
-	Audio  *audio.Audio
-	Gpio   *raspberry.Gpio
+	Server   *http.Server
+	Audio    *audio.Audio
+	Gpio     *raspberry.Gpio
+	Database *sql.Database
 }
 
 // NewApp creates a new application instance with initialized components.
 func NewApp(cfg *Config, stored *stored.Stored) (*App, error) {
-	audioInstance, err := audio.NewAudio(cfg.Audio, stored.Audio)
+	database, err := sql.NewDatabase(cfg.Database)
 	if err != nil {
 		return nil, err
 	}
 
-	server := http.NewServer(audioInstance, cfg.Server, stored)
+	audioInstance, err := audio.NewAudio(
+		cfg.Audio,
+		stored.Audio,
+		database,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	server := http.NewServer(audioInstance, cfg.Server, stored, database)
+
 	app := &App{
-		Server: server,
-		Audio:  audioInstance,
-		Gpio:   raspberry.NewGpio("gpiochip0", 16),
+		Server:   server,
+		Audio:    audioInstance,
+		Gpio:     raspberry.NewGpio("gpiochip0", 16),
+		Database: database,
 	}
 
 	return app, nil

@@ -30,6 +30,10 @@ type StoredConfig struct {
 	SilentEnabled bool    `json:"silent_enabled"`
 }
 
+type Capabilities interface {
+	AddListenedTrack(track *Track, when time.Time, during int64) error
+}
+
 // Audio manages a list of audio tracks, playback state, volume control, and storage path.
 type Audio struct {
 	tracks       []*Track        // tracks holds a slice of all available tracks.
@@ -40,10 +44,15 @@ type Audio struct {
 	stopChan     chan bool       // stopChan is a channel to signal stop
 	playerState  PlayerState     // playerState holds the current state of the audio player.
 	storedConfig StoredConfig    // storedConfig holds the stored configuration for the audio player.
+	capabilities Capabilities
 }
 
 // NewAudio creates a new Audio instance with a given list of track paths and a storage path.
-func NewAudio(config Config, storedConfig StoredConfig) (*Audio, error) {
+func NewAudio(
+	config Config,
+	storedConfig StoredConfig,
+	capabilities Capabilities,
+) (*Audio, error) {
 	storagePath := config.StoragePath
 	audio := &Audio{
 		tracks: []*Track{},
@@ -56,6 +65,7 @@ func NewAudio(config Config, storedConfig StoredConfig) (*Audio, error) {
 		playRequests: make(chan int),
 		stopChan:     make(chan bool),
 		storedConfig: storedConfig,
+		capabilities: capabilities,
 	}
 
 	// Ensure the directory exists or create it
@@ -269,7 +279,6 @@ func (a *Audio) playTrack(index int) error {
 	if err != nil {
 		return fmt.Errorf("error opening file: %v", err)
 	}
-
 	defer file.Close()
 
 	// Decode the opened file
@@ -277,11 +286,11 @@ func (a *Audio) playTrack(index int) error {
 	if err != nil {
 		return fmt.Errorf("error during decoding: %v", err)
 	}
-
 	defer streamer.Close()
 
 	a.activeStream = &beep.Ctrl{Streamer: streamer, Paused: false}
 	a.volume.Streamer = a.activeStream
+	startTime := time.Now() // Start time of the track
 	a.playerState.InitializeTrack(
 		track,
 		format.SampleRate.D(streamer.Position()).Round(time.Second),
@@ -291,6 +300,11 @@ func (a *Audio) playTrack(index int) error {
 		a.activeStream = nil
 		a.volume.Streamer = nil
 		a.playerState.StopTrack()
+		duration := int64(time.Since(startTime).Seconds())
+
+		if err := a.capabilities.AddListenedTrack(track, startTime, duration); err != nil {
+			log.Error().Msgf("Error adding listened track: %v", err)
+		}
 	}()
 
 	log.Info().Msgf("Playing track: %s\n", track.Path)
@@ -298,9 +312,7 @@ func (a *Audio) playTrack(index int) error {
 	speaker.Play(beep.Seq(a.volume, beep.Callback(func() {
 		a.stopChan <- true
 	})))
-	defer func() {
-		speaker.Clear()
-	}()
+	defer speaker.Clear()
 
 	for {
 		select {
@@ -310,7 +322,6 @@ func (a *Audio) playTrack(index int) error {
 			return nil
 		case <-time.After(time.Second):
 			speaker.Lock()
-			// Here, you must ensure that your streamer implements the Position method if you want to use it
 			if posStreamer, ok := streamer.(interface{ Position() int }); ok {
 				elapsedTime := format.SampleRate.D(posStreamer.Position()).Round(time.Second)
 				log.Info().Msgf("Position: %s", elapsedTime)

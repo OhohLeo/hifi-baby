@@ -5,11 +5,13 @@ import (
 
 	"github.com/OhohLeo/hifi-baby/audio"
 	"github.com/OhohLeo/hifi-baby/http"
+	"github.com/OhohLeo/hifi-baby/sql"
 )
 
 type Config struct {
-	Server http.Config
-	Audio  audio.Config
+	Audio    audio.Config
+	Database sql.Config
+	Server   http.Config
 
 	LogLevel         string `env:"LOG_LEVEL,default=info"`
 	StoredConfigPath string `env:"STORED_CONFIG_PATH,default=stored_config.json"`
