@@ -11,8 +11,7 @@ export default defineConfig({
     vue(), 
     vueJsx(), 
     VitePWA({ 
-      registerType: 'autoUpdate', 
-      manifest: './public/manifest.json' 
+      registerType: 'autoUpdate'
     })
   ],
   resolve: {

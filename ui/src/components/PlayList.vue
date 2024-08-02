@@ -31,25 +31,10 @@ const removeTrack = async (trackIndex: number) => {
 </script>
 
 <template>
-  <div class="mt-20 mb-44">
+  <div class="mt-20 mb-44 z-auto">
     <DataView :value="playlistStore.sortedTracks">
       <template #list="slotProps">
         <div class="grid grid-nogutter">
-          <div class="w-full flex justify-center items-center">
-            <FileUpload 
-                class="w-52"
-                v-bind:url="baseURL" 
-                mode="basic"  
-                name="file" 
-                accept="audio/*" 
-                chooseLabel="Add audio files"
-                :showUploadButton="false"
-                :showCancelButton="false"
-                :auto="true"
-                :multiple="true"
-                @upload="onUpload">
-              </FileUpload>
-          </div>
           <div v-for="(track, index) in slotProps.items" :key="index" class="col-6">
             <div class="flex flex-col sm:flex-row sm:items-center p-4 gap-3" :class="{ 'border-t border-surface-200 dark:border-surface-700': index !== 0 }">
               <div class="flex flex-row justify-between items-center flex-1 gap-4">

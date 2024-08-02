@@ -3,7 +3,7 @@ import './assets/main.css'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
-import Aura from '@/presets/aura';
+import Aura from './presets/aura';
 
 import App from './App.vue'
 

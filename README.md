@@ -91,3 +91,32 @@ Pour déployer une nouvelle version
 ```bash
 npm run build
 ```
+
+## Serveur samba
+
+```bash
+# install samba
+sudo apt-get install -y samba
+
+# enable samba server
+sudo systemctl enable smbd
+
+# setup hifi-baby password
+sudo smbpasswd -a hifi-baby
+
+# restart service
+sudo systemctl restart smbd
+```
+
+Ajouter à la fin du fichier /etc/samba/smb.conf & redémarrer le service :
+
+```
+[hifi-baby]
+   comment = Hifi Baby tracks
+   path = /home/hifi-baby/tracks
+   writeable = yes
+   browseable = yes
+   public = no
+   create mask = 0755
+   directory mask = 0755
+```
