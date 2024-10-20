@@ -142,6 +142,7 @@ func (a *Audio) addTrack(path string) (*Track, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	a.tracks[newTrack.ID] = newTrack
 	return newTrack, nil
 }
@@ -206,7 +207,7 @@ func (a *Audio) PlayRandomTrack() {
 // Play a specific track from the track list based on the index.
 func (a *Audio) PlayTrack(trackID uuid.UUID) {
 	// Stop the currently playing track if it exists
-	if a.activeStream != nil && !a.activeStream.Paused {
+	if a.activeStream != nil {
 		a.Stop()
 	}
 
