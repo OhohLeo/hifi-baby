@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/gopxl/beep"
 	"github.com/gopxl/beep/flac"
 	"github.com/gopxl/beep/mp3"
@@ -13,6 +14,7 @@ import (
 	"github.com/gopxl/beep/wav"
 )
 
+var namespace = uuid.MustParse("a1536713-cf3b-4c19-8ffb-f2f48d99a4e4")
 var supportedFormats = map[string]struct{}{
 	".flac": {},
 	".ogg":  {},
@@ -28,15 +30,15 @@ func isSupportedFormat(ext string) bool {
 
 // Track represents an individual audio track, including its file path, format, and index in the track list.
 type Track struct {
-	Path   string `json:"path"`   // Path is the file path to the audio track.
-	Format string `json:"format"` // Format is the audio format of the track (e.g., mp3, wav).
-	Index  int    `json:"index"`  // Index is the position of the track in the track list.
-	Name   string `json:"name"`   // Name is the file name of the audio track.
+	ID     uuid.UUID `json:"id"`     // Is an unique identifier depending on file path to the audio track.
+	Path   string    `json:"path"`   // Path is the file path to the audio track.
+	Format string    `json:"format"` // Format is the audio format of the track (e.g., mp3, wav).
+	Name   string    `json:"name"`   // Name is the file name of the audio track.
 }
 
-// NewTrack creates a new Track instance from a given file path and index.
+// NewTrack creates a new Track instance from a given file path.
 // It checks if the file exists and determines its format.
-func NewTrack(path string, index int) (*Track, error) {
+func NewTrack(path string) (*Track, error) {
 	// Check if the file exists at the specified path.
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, fmt.Errorf("file does not exist: %s", path)
@@ -59,11 +61,12 @@ func NewTrack(path string, index int) (*Track, error) {
 		return nil, fmt.Errorf("unsupported file format: %s", ext)
 	}
 
-	// Extract the file name from the path.
+	// Extract id & file name from the path.
+	id := uuid.NewMD5(namespace, []byte(path))
 	name := filepath.Base(path)
 
 	// Return a new Track instance with the determined path, format, index, and name.
-	return &Track{Path: path, Format: format, Index: index, Name: name}, nil
+	return &Track{ID: id, Path: path, Format: format, Name: name}, nil
 }
 
 // Open opens the track file.

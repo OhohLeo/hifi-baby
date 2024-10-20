@@ -6,6 +6,7 @@ toolchain go1.23.1
 
 require (
 	github.com/go-chi/chi/v5 v5.1.0
+	github.com/google/uuid v1.6.0
 	github.com/gopxl/beep v1.4.1
 	github.com/rs/zerolog v1.33.0
 	github.com/warthog618/go-gpiocdev v0.9.0

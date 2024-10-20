@@ -1,7 +1,6 @@
 package audio
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -9,8 +8,10 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gopxl/beep"
 	"github.com/gopxl/beep/effects"
 	"github.com/gopxl/beep/speaker"
@@ -36,14 +37,14 @@ type Capabilities interface {
 
 // Audio manages a list of audio tracks, playback state, volume control, and storage path.
 type Audio struct {
-	tracks       []*Track        // tracks holds a slice of all available tracks.
-	activeStream *beep.Ctrl      // ctrlStream controls the pause and resume of the active stream
-	volume       *effects.Volume // volume controls the volume of the playback.
-	storagePath  string          // storagePath is the base path where audio files are stored.
-	playRequests chan int        // playRequests is a channel for play requests
-	stopChan     chan bool       // stopChan is a channel to signal stop
-	playerState  PlayerState     // playerState holds the current state of the audio player.
-	storedConfig StoredConfig    // storedConfig holds the stored configuration for the audio player.
+	tracks       map[uuid.UUID]*Track // tracks holds a slice of all available tracks.
+	activeStream *beep.Ctrl           // ctrlStream controls the pause and resume of the active stream
+	volume       *effects.Volume      // volume controls the volume of the playback.
+	storagePath  string               // storagePath is the base path where audio files are stored.
+	playRequests chan uuid.UUID       // playRequests is a channel for play requests
+	stopChan     chan bool            // stopChan is a channel to signal stop
+	playerState  PlayerState          // playerState holds the current state of the audio player.
+	storedConfig StoredConfig         // storedConfig holds the stored configuration for the audio player.
 	capabilities Capabilities
 }
 
@@ -55,14 +56,14 @@ func NewAudio(
 ) (*Audio, error) {
 	storagePath := config.StoragePath
 	audio := &Audio{
-		tracks: []*Track{},
+		tracks: make(map[uuid.UUID]*Track),
 		volume: &effects.Volume{
 			Base:   storedConfig.BaseVolume,
 			Volume: storedConfig.DefaultVolume,
 			Silent: storedConfig.SilentEnabled,
 		},
 		storagePath:  storagePath,
-		playRequests: make(chan int),
+		playRequests: make(chan uuid.UUID),
 		stopChan:     make(chan bool),
 		storedConfig: storedConfig,
 		capabilities: capabilities,
@@ -107,14 +108,6 @@ func NewAudio(
 	return audio, nil
 }
 
-// checkTrackIndex checks if the provided index is within the bounds of the track list.
-func (a *Audio) checkTrackIndex(index int) error {
-	if index < 0 || index >= len(a.tracks) {
-		return errors.New("index out of range")
-	}
-	return nil
-}
-
 // AddTrack appends a new track to the audio manager, determining its index based on the current list size.
 // It returns the newly created track and any error encountered.
 func (a *Audio) AddTrack(file multipart.File, header *multipart.FileHeader) (*Track, error) {
@@ -145,21 +138,20 @@ func (a *Audio) AddTrack(file multipart.File, header *multipart.FileHeader) (*Tr
 }
 
 func (a *Audio) addTrack(path string) (*Track, error) {
-	newTrack, err := NewTrack(path, len(a.tracks))
+	newTrack, err := NewTrack(path)
 	if err != nil {
 		return nil, err
 	}
-	a.tracks = append(a.tracks, newTrack)
+	a.tracks[newTrack.ID] = newTrack
 	return newTrack, nil
 }
 
 // RemoveTrack removes a track from the list by index and handles playback and file deletion.
-func (a *Audio) RemoveTrack(index int) error {
-	if err := a.checkTrackIndex(index); err != nil {
-		return err
+func (a *Audio) RemoveTrack(id uuid.UUID) error {
+	trackToRemove, ok := a.tracks[id]
+	if !ok {
+		return fmt.Errorf("track %q not found", id)
 	}
-
-	trackToRemove := a.tracks[index]
 
 	// Stop playback if the track to be removed is currently playing.
 	if a.activeStream != nil && trackToRemove == a.playerState.CurrentTrack {
@@ -172,7 +164,7 @@ func (a *Audio) RemoveTrack(index int) error {
 	}
 
 	// Remove the track from the list.
-	a.tracks = append(a.tracks[:index], a.tracks[index+1:]...)
+	delete(a.tracks, id)
 	return nil
 }
 
@@ -183,26 +175,47 @@ func (a *Audio) GetPlayerState() PlayerState {
 
 // Tracks returns a slice of all available tracks.
 func (a *Audio) Tracks() []*Track {
-	return a.tracks
+	tracks := make([]*Track, len(a.tracks))
+	idx := 0
+
+	for _, track := range a.tracks {
+		tracks[idx] = track
+		idx++
+	}
+
+	sort.Slice(tracks, func(i, j int) bool {
+		return tracks[i].Name < tracks[j].Name
+	})
+
+	return tracks
 }
 
 // PlayRandomTrack selects a random track and plays it.
 func (a *Audio) PlayRandomTrack() {
+	trackIDs := make([]uuid.UUID, len(a.tracks))
+	idx := 0
+	for trackID := range a.tracks {
+		trackIDs[idx] = trackID
+		idx++
+	}
+
 	randomIndex := rand.Intn(len(a.tracks))
-	a.PlayTrack(randomIndex)
+	a.PlayTrack(trackIDs[int(randomIndex)])
 }
 
 // Play a specific track from the track list based on the index.
-func (a *Audio) PlayTrack(index int) {
+func (a *Audio) PlayTrack(trackID uuid.UUID) {
 	// Stop the currently playing track if it exists
 	if a.activeStream != nil && !a.activeStream.Paused {
 		a.Stop()
 	}
 
-	log.Info().Msgf("Playing track %d: %s", index, a.tracks[index].Path)
+	if track, ok := a.tracks[trackID]; ok {
+		log.Info().Msgf("Playing track %s", track.Path)
 
-	// Send the play request for the new track
-	a.playRequests <- index
+		// Send the play request for the new track
+		a.playRequests <- track.ID
+	}
 }
 
 // Pause the currently playing track if it is not already paused.
@@ -268,11 +281,11 @@ func (a *Audio) Run() {
 	}
 }
 
-func (a *Audio) playTrack(index int) error {
-	if index < 0 || index >= len(a.tracks) {
-		return fmt.Errorf("index out of range")
+func (a *Audio) playTrack(id uuid.UUID) error {
+	track, ok := a.tracks[id]
+	if !ok {
+		return fmt.Errorf("track %q not found", id)
 	}
-	track := a.tracks[index]
 
 	// Open the track file
 	file, err := track.Open()

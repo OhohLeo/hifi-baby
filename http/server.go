@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 
 	"github.com/OhohLeo/hifi-baby/audio"
@@ -63,8 +64,8 @@ func NewServer(
 
 	r.Route("/audio", func(r chi.Router) {
 		r.Post("/", server.addTrack)                              // Add a track
-		r.Delete("/{trackIndex}", server.removeTrack)             // Remove a track
-		r.Post("/play/{trackIndex}", server.playTrack)            // Play a track
+		r.Delete("/{trackID}", server.removeTrack)                // Remove a track
+		r.Post("/play/{trackID}", server.playTrack)               // Play a track
 		r.Post("/pause", server.pauseTrack)                       // Pause the current track
 		r.Post("/resume", server.resumeTrack)                     // Resume the current track
 		r.Post("/stop", server.stopTrack)                         // Stop the current track
@@ -131,12 +132,12 @@ func (s *Server) addTrack(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) removeTrack(w http.ResponseWriter, r *http.Request) {
-	trackIndex, err := strconv.Atoi(chi.URLParam(r, "trackIndex"))
+	trackID, err := uuid.Parse(chi.URLParam(r, "trackID"))
 	if err != nil {
-		http.Error(w, "Invalid track index", http.StatusBadRequest)
+		http.Error(w, "Invalid track id", http.StatusBadRequest)
 		return
 	}
-	err = s.audio.RemoveTrack(trackIndex)
+	err = s.audio.RemoveTrack(trackID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -145,13 +146,13 @@ func (s *Server) removeTrack(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) playTrack(w http.ResponseWriter, r *http.Request) {
-	trackIndex, err := strconv.Atoi(chi.URLParam(r, "trackIndex"))
+	trackID, err := uuid.Parse(chi.URLParam(r, "trackID"))
 	if err != nil {
-		http.Error(w, "Invalid track index", http.StatusBadRequest)
+		http.Error(w, "Invalid track id", http.StatusBadRequest)
 		return
 	}
 
-	s.audio.PlayTrack(trackIndex)
+	s.audio.PlayTrack(trackID)
 	w.WriteHeader(http.StatusOK)
 }
 
