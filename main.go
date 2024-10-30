@@ -5,7 +5,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/OhohLeo/hifi-baby/app"
-	"github.com/OhohLeo/hifi-baby/stored"
+	"github.com/OhohLeo/hifi-baby/settings"
 )
 
 func main() {
@@ -14,7 +14,7 @@ func main() {
 		log.Fatal().Msgf("Erreur lors de l'initialisation de la configuration : %v", err)
 	}
 
-	stored, err := stored.NewStored(cfg.StoredConfigPath)
+	settings, err := settings.NewSettings(cfg.SettingsPath)
 	if err != nil {
 		log.Fatal().Msgf("Erreur lors de l'initialisation du stockage : %v", err)
 	}
@@ -25,7 +25,7 @@ func main() {
 	}
 	zerolog.SetGlobalLevel(level)
 
-	app, errApp := app.NewApp(cfg, stored)
+	app, errApp := app.NewApp(cfg, settings)
 	if errApp != nil {
 		log.Fatal().Msgf("Erreur lors de l'initialisation de l'application : %v", errApp)
 	}

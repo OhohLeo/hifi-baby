@@ -33,4 +33,4 @@ go build -o hifi-baby
 # GOARM=7 \
 # go build -o hifi-baby
 
-scp -r hifi-baby stored_config.json ui/dist hifi-baby.service hifi-baby.default hifi-baby@192.168.1.76:/home/hifi-baby
+scp -r hifi-baby settings.json ui/dist hifi-baby.service hifi-baby.default hifi-baby@192.168.1.76:/home/hifi-baby

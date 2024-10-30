@@ -199,7 +199,7 @@
 			"response": []
 		},
 		{
-			"name": "stored",
+			"name": "settings",
 			"request": {
 				"method": "GET",
 				"header": [],
@@ -219,7 +219,7 @@
 			"response": []
 		},
 		{
-			"name": "stored",
+			"name": "settings",
 			"request": {
 				"method": "PUT",
 				"header": [],
@@ -233,14 +233,14 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:3000/stored",
+					"raw": "http://localhost:3000/settings",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
 					"port": "3000",
 					"path": [
-						"stored"
+						"settings"
 					]
 				}
 			},

@@ -22,7 +22,7 @@ type Config struct {
 	StoragePath string `env:"STORAGE_PATH,default=tracks"`
 }
 
-type StoredConfig struct {
+type Settings struct {
 	BaseVolume    float64 `json:"base_volume"`
 	DefaultVolume float64 `json:"default_volume"`
 	MinVolume     float64 `json:"min_volume"`
@@ -44,28 +44,28 @@ type Audio struct {
 	playRequests chan uuid.UUID       // playRequests is a channel for play requests
 	stopChan     chan bool            // stopChan is a channel to signal stop
 	playerState  PlayerState          // playerState holds the current state of the audio player.
-	storedConfig StoredConfig         // storedConfig holds the stored configuration for the audio player.
+	settings     Settings             // settings holds the audio player settings.
 	capabilities Capabilities
 }
 
 // NewAudio creates a new Audio instance with a given list of track paths and a storage path.
 func NewAudio(
 	config Config,
-	storedConfig StoredConfig,
+	settings Settings,
 	capabilities Capabilities,
 ) (*Audio, error) {
 	storagePath := config.StoragePath
 	audio := &Audio{
 		tracks: make(map[uuid.UUID]*Track),
 		volume: &effects.Volume{
-			Base:   storedConfig.BaseVolume,
-			Volume: storedConfig.DefaultVolume,
-			Silent: storedConfig.SilentEnabled,
+			Base:   settings.BaseVolume,
+			Volume: settings.DefaultVolume,
+			Silent: settings.SilentEnabled,
 		},
 		storagePath:  storagePath,
 		playRequests: make(chan uuid.UUID),
 		stopChan:     make(chan bool),
-		storedConfig: storedConfig,
+		settings:     settings,
 		capabilities: capabilities,
 	}
 
@@ -246,9 +246,9 @@ func (a *Audio) IncreaseVolume() {
 	speaker.Lock()
 	defer speaker.Unlock()
 
-	a.volume.Volume += a.storedConfig.VolumeStep
-	if a.volume.Volume > a.storedConfig.MaxVolume {
-		a.volume.Volume = a.storedConfig.MaxVolume
+	a.volume.Volume += a.settings.VolumeStep
+	if a.volume.Volume > a.settings.MaxVolume {
+		a.volume.Volume = a.settings.MaxVolume
 	}
 }
 
@@ -257,9 +257,9 @@ func (a *Audio) DecreaseVolume() {
 	speaker.Lock()
 	defer speaker.Unlock()
 
-	a.volume.Volume -= a.storedConfig.VolumeStep
-	if a.volume.Volume < a.storedConfig.MinVolume {
-		a.volume.Volume = a.storedConfig.MinVolume
+	a.volume.Volume -= a.settings.VolumeStep
+	if a.volume.Volume < a.settings.MinVolume {
+		a.volume.Volume = a.settings.MinVolume
 	}
 }
 

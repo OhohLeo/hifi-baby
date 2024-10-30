@@ -6,8 +6,8 @@ import (
 	"github.com/OhohLeo/hifi-baby/audio"
 	"github.com/OhohLeo/hifi-baby/http"
 	"github.com/OhohLeo/hifi-baby/raspberry"
+	"github.com/OhohLeo/hifi-baby/settings"
 	"github.com/OhohLeo/hifi-baby/sql"
-	"github.com/OhohLeo/hifi-baby/stored"
 )
 
 type App struct {
@@ -18,7 +18,7 @@ type App struct {
 }
 
 // NewApp creates a new application instance with initialized components.
-func NewApp(cfg *Config, stored *stored.Stored) (*App, error) {
+func NewApp(cfg *Config, settings *settings.Settings) (*App, error) {
 	database, err := sql.NewDatabase(cfg.Database)
 	if err != nil {
 		return nil, err
@@ -26,14 +26,14 @@ func NewApp(cfg *Config, stored *stored.Stored) (*App, error) {
 
 	audioInstance, err := audio.NewAudio(
 		cfg.Audio,
-		stored.Audio,
+		settings.Audio,
 		database,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	server := http.NewServer(audioInstance, cfg.Server, stored, database)
+	server := http.NewServer(audioInstance, cfg.Server, settings, database)
 
 	app := &App{
 		Server:   server,

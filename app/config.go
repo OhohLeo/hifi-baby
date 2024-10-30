@@ -13,8 +13,8 @@ type Config struct {
 	Database sql.Config
 	Server   http.Config
 
-	LogLevel         string `env:"LOG_LEVEL,default=info"`
-	StoredConfigPath string `env:"STORED_CONFIG_PATH,default=stored_config.json"`
+	LogLevel     string `env:"LOG_LEVEL,default=info"`
+	SettingsPath string `env:"SETTINGS_PATH,default=settings.json"`
 }
 
 func NewConfig() (*Config, error) {

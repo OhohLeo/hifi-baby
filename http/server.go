@@ -14,8 +14,8 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/OhohLeo/hifi-baby/audio"
+	"github.com/OhohLeo/hifi-baby/settings"
 	"github.com/OhohLeo/hifi-baby/sql"
-	"github.com/OhohLeo/hifi-baby/stored"
 )
 
 type Config struct {
@@ -28,7 +28,7 @@ type Server struct {
 	router    *chi.Mux
 	serverURL string // Use ServerURL to start the server
 	config    Config
-	stored    *stored.Stored
+	settings  *settings.Settings
 	database  *sql.Database
 }
 
@@ -36,7 +36,7 @@ type Server struct {
 func NewServer(
 	audio *audio.Audio,
 	config Config,
-	stored *stored.Stored,
+	settings *settings.Settings,
 	database *sql.Database,
 ) *Server {
 	r := chi.NewRouter()
@@ -58,7 +58,7 @@ func NewServer(
 		router:    r,
 		serverURL: config.ServerURL,
 		config:    config,
-		stored:    stored,
+		settings:  settings,
 		database:  database,
 	}
 
@@ -78,8 +78,8 @@ func NewServer(
 		r.Post("/volume/mute", server.muteVolume)                 // Mute volume
 	})
 
-	r.Get("/stored", server.getStoredConfig)
-	r.Put("/stored", server.updateStoredConfig)
+	r.Get("/settings", server.getSettings)
+	r.Put("/settings", server.updateSettings)
 
 	return server
 }
@@ -240,29 +240,29 @@ func (s *Server) muteVolume(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *Server) getStoredConfig(w http.ResponseWriter, r *http.Request) {
+func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	// Encode the stored configuration to the response
-	if err := json.NewEncoder(w).Encode(s.stored); err != nil {
-		http.Error(w, "Failed to encode stored configuration: "+err.Error(), http.StatusInternalServerError)
+	// Encode the settings to the response
+	if err := json.NewEncoder(w).Encode(s.settings); err != nil {
+		http.Error(w, "Failed to encode settings: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *Server) updateStoredConfig(w http.ResponseWriter, r *http.Request) {
-	var newStored stored.Stored
+func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
+	var newSettings settings.Settings
 
-	if err := json.NewDecoder(r.Body).Decode(&newStored); err != nil {
-		http.Error(w, "Failed to decode stored configuration: "+err.Error(), http.StatusInternalServerError)
+	if err := json.NewDecoder(r.Body).Decode(&newSettings); err != nil {
+		http.Error(w, "Failed to decode settings: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Encode the updated configuration back to JSON
-	if err := s.stored.Update(&newStored); err != nil {
-		http.Error(w, "Failed to update stored configuration: "+err.Error(), http.StatusInternalServerError)
+	if err := s.settings.Update(&newSettings); err != nil {
+		http.Error(w, "Failed to update settings: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
