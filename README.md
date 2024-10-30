@@ -31,7 +31,7 @@ Variables d'environnements
 | Module    | Variable          | Description                                | Valeur par défaut          |
 |-----------|-------------------|--------------------------------------------|----------------------------|
 | Général   | LOG_LEVEL         | Niveau de log                              | info                       |
-| Général   | STORED_CONFIG_PATH| Chemin vers le fichier de configuration    | stored_config.json         |
+| Général   | SETTINGS_PATH     | Chemin vers le fichier de configuration    | settings.json              |
 | Audio     | STORAGE_PATH      | Chemin de stockage des pistes audio        | tracks                     |
 | Serveur   | SERVER_URL        | URL du serveur                             | localhost:3000             |
 | Serveur   | SERVER_UI_PATH    | Chemin vers l'interface utilisateur        | dist                       |

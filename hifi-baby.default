@@ -1,5 +1,5 @@
 SERVER_URL=0.0.0.0:3000
-STORED_CONFIG_PATH=/home/hifi-baby/stored_config.json
+SETTINGS_PATH=/home/hifi-baby/settings.json
 STORAGE_PATH=/home/hifi-baby/tracks
 SERVER_UI_PATH=/home/hifi-baby/dist
 DATABASE_PATH=/home/hifi-baby/hifi-baby.db

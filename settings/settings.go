@@ -1,4 +1,4 @@
-package stored
+package settings
 
 import (
 	"encoding/json"
@@ -8,13 +8,13 @@ import (
 	"github.com/OhohLeo/hifi-baby/audio"
 )
 
-type Stored struct {
-	Audio audio.StoredConfig `json:"audio"`
+type Settings struct {
+	Audio audio.Settings `json:"audio"`
 
 	path string
 }
 
-func NewStored(path string) (*Stored, error) {
+func NewSettings(path string) (*Settings, error) {
 	if _, err := os.Stat(path); err != nil {
 		return nil, err
 	}
@@ -25,27 +25,27 @@ func NewStored(path string) (*Stored, error) {
 	}
 	defer file.Close()
 
-	var stored Stored
+	var settings Settings
 
-	// Decode the JSON config file into the storedConfig field
+	// Decode the JSON config file into the settings field
 	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&stored); err != nil {
+	if err := decoder.Decode(&settings); err != nil {
 		return nil, err
 	}
 
-	stored.path = path
+	settings.path = path
 
-	return &stored, nil
+	return &settings, nil
 }
 
-func (s *Stored) Update(newStored *Stored) error {
-	updatedStoredData, err := json.Marshal(newStored)
+func (s *Settings) Update(newSettings *Settings) error {
+	updatedSettingsData, err := json.Marshal(newSettings)
 	if err != nil {
 		return err
 	}
 
 	// Write the updated configuration back to file
-	err = os.WriteFile(s.path, updatedStoredData, 0644)
+	err = os.WriteFile(s.path, updatedSettingsData, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write to file at path %q: %w", s.path, err)
 	}
