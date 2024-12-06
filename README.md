@@ -35,88 +35,13 @@ Variables d'environnements
 | Audio     | STORAGE_PATH      | Chemin de stockage des pistes audio        | tracks                     |
 | Serveur   | SERVER_URL        | URL du serveur                             | localhost:3000             |
 | Serveur   | SERVER_UI_PATH    | Chemin vers l'interface utilisateur        | dist                       |
-| Base de données | DATABASE_PATH | Chemin vers le fichier de la base de données | ./hifi-baby.db          |
-| Base de données | DATABASE_TIMEOUT | Délai d'expiration pour la base de données | 10s                     |
+| Base de données | DATABASE_PATH | Chemin vers le fichier de la base de données | ./hifi-baby.db         |
+| Base de données | DATABASE_TIMEOUT | Délai d'expiration pour la base de données | 10s                   |
 
-### Requirements
+### Requirements
 
 ```bash
 # To enable databases : install sqlite3
 sudo apt install sqlite3
 ```
 
-### Cross compilation pour Raspberry-pi
-
-Le projet est actuellement déployé sur Raspberry-pi 2B.
-
-Pour mettre en place la cross-compilation :
-
-```bash
-sudo apt install libasound2-dev gcc-arm-linux-gnueabihf
-```
-
-Nécessiter de cross-compiler la librairie *alsa-lib* :
-
-```bash
-mkdir cross-compile
-cd cross-compile
-wget https://www.alsa-project.org/files/pub/lib/alsa-lib-1.2.7.2.tar.b2z
-CC=arm-linux-gnueabihf-gcc ./configure --host=arm-linux && make
-```
-
-Cross-compilation du projet Go :
-
-```bash
-PATH=/usr/arm-linux-gnueabihf/bin:$PATH \
-CGO_LDFLAGS="-Lcross-compile/alsa-lib-1.2.7.2/src/.libs -lasound" \
-CGO_CPPFLAGS="-Icross-compile/alsa-lib-1.2.7.2/include" \
-env CGO_ENABLED=1 \
-CC=arm-linux-gnueabihf-gcc \
-GOOS=linux \
-GOARCH=arm \
-GOARM=7 \
-go build -o hifi-baby
-```
-
-## Interface graphique
-
-Pour tester en local
-
-```bash
-npm run dev
-```
-
-Pour déployer une nouvelle version
-
-```bash
-npm run build
-```
-
-## Serveur samba
-
-```bash
-# install samba
-sudo apt-get install -y samba
-
-# enable samba server
-sudo systemctl enable smbd
-
-# setup hifi-baby password
-sudo smbpasswd -a hifi-baby
-
-# restart service
-sudo systemctl restart smbd
-```
-
-Ajouter à la fin du fichier /etc/samba/smb.conf & redémarrer le service :
-
-```
-[hifi-baby]
-   comment = Hifi Baby tracks
-   path = /home/hifi-baby/tracks
-   writeable = yes
-   browseable = yes
-   public = no
-   create mask = 0755
-   directory mask = 0755
-```
