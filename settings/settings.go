@@ -9,7 +9,8 @@ import (
 )
 
 type Settings struct {
-	Audio audio.Settings `json:"audio"`
+	Audio   audio.Settings    `json:"audio"`
+	Devices map[string]string `json:"devices"`
 
 	path string
 }

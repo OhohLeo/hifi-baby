@@ -14,6 +14,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/OhohLeo/hifi-baby/audio"
+	"github.com/OhohLeo/hifi-baby/mdns"
 	"github.com/OhohLeo/hifi-baby/settings"
 	"github.com/OhohLeo/hifi-baby/sql"
 )
@@ -25,6 +26,7 @@ type Config struct {
 
 type Server struct {
 	audio     *audio.Audio
+	mdns      *mdns.MDNS
 	router    *chi.Mux
 	serverURL string // Use ServerURL to start the server
 	config    Config
@@ -35,6 +37,7 @@ type Server struct {
 // NewServer creates a new Server instance with routes configured for audio management.
 func NewServer(
 	audio *audio.Audio,
+	mdns *mdns.MDNS,
 	config Config,
 	settings *settings.Settings,
 	database *sql.Database,
@@ -55,6 +58,7 @@ func NewServer(
 
 	server := &Server{
 		audio:     audio,
+		mdns:      mdns,
 		router:    r,
 		serverURL: config.ServerURL,
 		config:    config,
@@ -78,8 +82,10 @@ func NewServer(
 		r.Post("/volume/mute", server.muteVolume)                 // Mute volume
 	})
 
-	r.Get("/settings", server.getSettings)
-	r.Put("/settings", server.updateSettings)
+	r.Route("/settings", func(r chi.Router) {
+		r.Get("/", server.getSettings)
+		r.Put("/", server.updateSettings)
+	})
 
 	return server
 }
@@ -242,6 +248,8 @@ func (s *Server) muteVolume(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	s.settings.Devices = s.mdns.Devices()
 
 	// Encode the settings to the response
 	if err := json.NewEncoder(w).Encode(s.settings); err != nil {

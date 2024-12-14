@@ -5,6 +5,7 @@ import (
 
 	"github.com/OhohLeo/hifi-baby/audio"
 	"github.com/OhohLeo/hifi-baby/http"
+	"github.com/OhohLeo/hifi-baby/mdns"
 	"github.com/OhohLeo/hifi-baby/raspberry"
 	"github.com/OhohLeo/hifi-baby/settings"
 	"github.com/OhohLeo/hifi-baby/sql"
@@ -13,6 +14,7 @@ import (
 type App struct {
 	Server   *http.Server
 	Audio    *audio.Audio
+	MDNS     *mdns.MDNS
 	Gpio     *raspberry.Gpio
 	Database *sql.Database
 }
@@ -33,11 +35,14 @@ func NewApp(cfg *Config, settings *settings.Settings) (*App, error) {
 		return nil, err
 	}
 
-	server := http.NewServer(audioInstance, cfg.Server, settings, database)
+	mdnsInstance := mdns.New("hifi-baby")
+
+	server := http.NewServer(audioInstance, mdnsInstance, cfg.Server, settings, database)
 
 	app := &App{
 		Server:   server,
 		Audio:    audioInstance,
+		MDNS:     mdnsInstance,
 		Gpio:     raspberry.NewGpio("gpiochip0", 16),
 		Database: database,
 	}
@@ -75,6 +80,9 @@ func (app *App) Run() error {
 
 	// Start the audio management in a goroutine to run it concurrently
 	go app.Audio.Run()
+
+	// Start device detection
+	go app.MDNS.Run()
 
 	// Start the HTTP server using the Run() method of Server
 	return app.Server.Run()

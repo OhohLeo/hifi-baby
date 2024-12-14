@@ -8,6 +8,7 @@ require (
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/google/uuid v1.6.0
 	github.com/gopxl/beep v1.4.1
+	github.com/hashicorp/mdns v1.0.5
 	github.com/rs/zerolog v1.33.0
 	github.com/warthog618/go-gpiocdev v0.9.1
 	gorm.io/driver/sqlite v1.5.7
@@ -28,7 +29,12 @@ require (
 	github.com/mewkiz/flac v1.0.12 // indirect
 	github.com/mewkiz/pkg v0.0.0-20241114153824-09a7e24442bf // indirect
 	github.com/mewpkg/term v0.0.0-20241026122259-37a80af23985 // indirect
+	github.com/miekg/dns v1.1.62 // indirect
+	golang.org/x/mod v0.22.0 // indirect
+	golang.org/x/net v0.32.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/tools v0.28.0 // indirect
 )
 
 require (
