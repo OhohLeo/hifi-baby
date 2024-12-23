@@ -134,7 +134,10 @@ func (s *Server) addTrack(w http.ResponseWriter, r *http.Request) {
 	}
 	// Respond to the client
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(track)
+	if err := json.NewEncoder(w).Encode(track); err != nil {
+		http.Error(w, "Failed to encode track", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (s *Server) removeTrack(w http.ResponseWriter, r *http.Request) {
@@ -178,7 +181,10 @@ func (s *Server) stopTrack(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listTracks(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(s.audio.Tracks())
+	if err := json.NewEncoder(w).Encode(s.audio.Tracks()); err != nil {
+		http.Error(w, "Failed to encode track list", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (s *Server) listenedTracks(w http.ResponseWriter, r *http.Request) {
@@ -195,7 +201,10 @@ func (s *Server) listenedTracks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(listenedTracks)
+	if err := json.NewEncoder(w).Encode(listenedTracks); err != nil {
+		http.Error(w, "Failed to encode listened tracks", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (s *Server) mostListenedTracks(w http.ResponseWriter, r *http.Request) {
@@ -219,11 +228,17 @@ func (s *Server) mostListenedTracks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(mostListenedTracks)
+	if err := json.NewEncoder(w).Encode(mostListenedTracks); err != nil {
+		http.Error(w, "Failed to encode most listened tracks", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (s *Server) currentPlayerState(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(s.audio.GetPlayerState())
+	if err := json.NewEncoder(w).Encode(s.audio.GetPlayerState()); err != nil {
+		http.Error(w, "Failed to encode player state", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (s *Server) increaseVolume(w http.ResponseWriter, r *http.Request) {
