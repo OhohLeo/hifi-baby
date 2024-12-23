@@ -23,12 +23,12 @@ type Config struct {
 }
 
 type Settings struct {
-	BaseVolume    float64 `json:"base_volume"`
-	DefaultVolume float64 `json:"default_volume"`
-	MinVolume     float64 `json:"min_volume"`
-	MaxVolume     float64 `json:"max_volume"`
-	VolumeStep    float64 `json:"volume_step"`
-	SilentEnabled bool    `json:"silent_enabled"`
+	BaseVolume    float64 `json:"baseVolume"`
+	DefaultVolume float64 `json:"defaultVolume"`
+	MinVolume     float64 `json:"minVolume"`
+	MaxVolume     float64 `json:"maxVolume"`
+	VolumeStep    float64 `json:"volumeStep"`
+	SilentEnabled bool    `json:"silentEnabled"`
 }
 
 type Capabilities interface {
