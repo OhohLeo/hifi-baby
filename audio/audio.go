@@ -338,6 +338,7 @@ func (a *Audio) playTrack(id uuid.UUID) error {
 			speaker.Lock()
 			if posStreamer, ok := streamer.(interface{ Position() int }); ok {
 				elapsedTime := format.SampleRate.D(posStreamer.Position()).Round(time.Second)
+				a.playerState.UpdatePosition(elapsedTime)
 				log.Info().Msgf("Position: %s", elapsedTime)
 			} else {
 				log.Error().Msg("The streamer does not support the Position method")

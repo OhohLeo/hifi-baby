@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/gopxl/beep"
@@ -30,10 +31,12 @@ func isSupportedFormat(ext string) bool {
 
 // Track represents an individual audio track, including its file path, format, and index in the track list.
 type Track struct {
-	ID     uuid.UUID `json:"id"`     // Is an unique identifier depending on file path to the audio track.
-	Path   string    `json:"path"`   // Path is the file path to the audio track.
-	Format string    `json:"format"` // Format is the audio format of the track (e.g., mp3, wav).
-	Name   string    `json:"name"`   // Name is the file name of the audio track.
+	ID              uuid.UUID     `json:"id"`       // Is an unique identifier depending on file path to the audio track.
+	Path            string        `json:"path"`     // Path is the file path to the audio track.
+	Format          string        `json:"format"`   // Format is the audio format of the track (e.g., mp3, wav).
+	Name            string        `json:"name"`     // Name is the file name of the audio track.
+	SecondsDuration int           `json:"duration"` // SecondsDuration is the number of seconds of the audio track.
+	duration        time.Duration // Duration is the length of the audio track.
 }
 
 // NewTrack creates a new Track instance from a given file path.
@@ -65,8 +68,18 @@ func NewTrack(path string) (*Track, error) {
 	id := uuid.NewMD5(namespace, []byte(path))
 	name := filepath.Base(path)
 
-	// Return a new Track instance with the determined path, format, index, and name.
-	return &Track{ID: id, Path: path, Format: format, Name: name}, nil
+	// Create a temporary track to get the duration
+	track := &Track{ID: id, Path: path, Format: format, Name: name}
+
+	// Get the duration of the track
+	duration, err := track.GetDuration()
+	if err != nil {
+		return nil, fmt.Errorf("error getting track duration: %v", err)
+	}
+	track.SecondsDuration = int(duration.Seconds())
+
+	// Return a new Track instance with the determined path, format, index, name, and duration.
+	return track, nil
 }
 
 // Open opens the track file.
@@ -97,6 +110,27 @@ func (t *Track) Decode(f *os.File) (beep.StreamSeekCloser, beep.Format, error) {
 	default:
 		return nil, beep.Format{}, fmt.Errorf("unsupported format: %s", t.Format)
 	}
+}
+
+// GetDuration calculates and returns the duration of the audio track.
+func (t *Track) GetDuration() (time.Duration, error) {
+	// Open the track file
+	file, err := t.Open()
+	if err != nil {
+		return 0, fmt.Errorf("error opening file: %v", err)
+	}
+	defer file.Close()
+
+	// Decode the file to get the streamer and format
+	streamer, format, err := t.Decode(file)
+	if err != nil {
+		return 0, fmt.Errorf("error decoding file: %v", err)
+	}
+	defer streamer.Close()
+
+	// Calculate duration based on stream length and sample rate
+	duration := format.SampleRate.D(streamer.Len()).Round(time.Second)
+	return duration, nil
 }
 
 // Delete removes the audio file associated with the track from the filesystem.
