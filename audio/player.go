@@ -6,31 +6,30 @@ import (
 
 // PlayerState represents the current state of an audio track playback.
 type PlayerState struct {
-	CurrentTrack    *Track        `json:"currentTrack"` // CurrentTrack is the audio track currently being played.
-	IsPlaying       bool          `json:"isPlaying"`    // IsPlaying indicates whether the track playback is active.
-	IsMuted         bool          `json:"isMuted"`      // IsMuted indicates whether the sound is muted.
-	SecondsPosition int           `json:"position"`     // SecondsPosition is the current playback position in seconds in the track.
-	position        time.Duration // Position is the current playback position in the track.
+	CurrentTrack *Track        `json:"track"`
+	IsPlaying    bool          `json:"isPlaying"`
+	IsMuted      bool          `json:"isMuted"`
+	Position     time.Duration `json:"position"`
+	Duration     time.Duration `json:"duration"`
 }
 
-// InitializeTrack initializes the current track and resets the elapsed and total time.
+// InitializeTrack sets up the player state for a new track.
 func (ps *PlayerState) InitializeTrack(track *Track, elapsedTime, duration time.Duration) {
 	ps.CurrentTrack = track
 	ps.IsPlaying = true
-	ps.SecondsPosition = 0
-	ps.position = 0
+	ps.Position = elapsedTime
+	ps.Duration = duration
 }
 
-// UpdatePosition updates the current playback position.
+// UpdatePosition updates the playback position of the current track.
 func (ps *PlayerState) UpdatePosition(position time.Duration) {
-	ps.SecondsPosition = int(position.Seconds())
-	ps.position = position
+	ps.Position = position
 }
 
-// StopTrack stops the playback and resets the track and time information.
+// StopTrack resets the player state when a track stops playing.
 func (ps *PlayerState) StopTrack() {
 	ps.CurrentTrack = nil
 	ps.IsPlaying = false
-	ps.SecondsPosition = 0
-	ps.position = 0
+	ps.Position = 0
+	ps.Duration = 0
 }
