@@ -35,7 +35,7 @@ type Track struct {
 	Path            string        `json:"path"`     // Path is the file path to the audio track.
 	Format          string        `json:"format"`   // Format is the audio format of the track (e.g., mp3, wav).
 	Name            string        `json:"name"`     // Name is the file name of the audio track.
-	SecondsDuration int           `json:"duration"` // SecondsDuration is the number of seconds of the audio track.
+	SecondsDuration int64         `json:"duration"` // SecondsDuration is the number of seconds of the audio track.
 	duration        time.Duration // Duration is the length of the audio track.
 }
 
@@ -76,7 +76,7 @@ func NewTrack(path string) (*Track, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error getting track duration: %v", err)
 	}
-	track.SecondsDuration = int(duration.Seconds())
+	track.SecondsDuration = int64(duration.Seconds())
 
 	// Return a new Track instance with the determined path, format, index, name, and duration.
 	return track, nil

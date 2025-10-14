@@ -66,7 +66,7 @@ func NewServer(
 		r.Post("/", server.addTrack)                              // Add a track
 		r.Delete("/{trackID}", server.removeTrack)                // Remove a track
 		r.Post("/play/{trackID}", server.playTrack)               // Play a track
-		r.Post("/play/{trackID}/position", server.setTrackPosition) // Set track position
+		r.Post("/play/position", server.setTrackPosition)         // Set track position
 		r.Post("/pause", server.pauseTrack)                       // Pause the current track
 		r.Post("/resume", server.resumeTrack)                     // Resume the current track
 		r.Post("/stop", server.stopTrack)                         // Stop the current track
@@ -147,21 +147,15 @@ func (s *Server) removeTrack(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) setTrackPosition(w http.ResponseWriter, r *http.Request) {
-	trackID, err := uuid.Parse(chi.URLParam(r, "trackID"))
-	if err != nil {
-		http.Error(w, "Invalid track id", http.StatusBadRequest)
-		return
-	}
-
-	// Check if the correct track is playing
+	// Check if a track is playing
 	playerState := s.audio.GetPlayerState()
-	if !playerState.IsPlaying || playerState.CurrentTrack == nil || playerState.CurrentTrack.ID != trackID {
-		http.Error(w, "The requested track is not playing", http.StatusConflict)
+	if !playerState.IsPlaying || playerState.CurrentTrack == nil {
+		http.Error(w, "No track is currently playing", http.StatusConflict)
 		return
 	}
 
 	var body struct {
-		Position float64 `json:"position"` // Position in seconds
+		Position int64 `json:"position"` // Position in seconds
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -169,7 +163,14 @@ func (s *Server) setTrackPosition(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	position := time.Duration(body.Position * float64(time.Second))
+	// Compare duration with a tolerance of 1 second
+	trackDurationSeconds := playerState.CurrentTrack.SecondsDuration
+	if body.Position < 0 || trackDurationSeconds < body.Position {
+		http.Error(w, "The provided duration does not match the playing track", http.StatusConflict)
+		return
+	}
+
+	position := time.Duration(body.Position) * time.Second
 
 	if err := s.audio.SetPosition(position); err != nil {
 		http.Error(w, "Failed to set position: "+err.Error(), http.StatusInternalServerError)

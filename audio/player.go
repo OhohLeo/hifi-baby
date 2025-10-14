@@ -1,6 +1,7 @@
 package audio
 
 import (
+	"encoding/json"
 	"time"
 )
 
@@ -11,6 +12,23 @@ type PlayerState struct {
 	IsMuted      bool          `json:"isMuted"`
 	Position     time.Duration `json:"position"`
 	Duration     time.Duration `json:"duration"`
+}
+
+// MarshalJSON is a custom marshaler for PlayerState to convert durations to seconds.
+func (ps *PlayerState) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		CurrentTrack *Track  `json:"track"`
+		IsPlaying    bool    `json:"isPlaying"`
+		IsMuted      bool    `json:"isMuted"`
+		Position     float64 `json:"position"`
+		Duration     float64 `json:"duration"`
+	}{
+		CurrentTrack: ps.CurrentTrack,
+		IsPlaying:    ps.IsPlaying,
+		IsMuted:      ps.IsMuted,
+		Position:     ps.Position.Seconds(),
+		Duration:     ps.Duration.Seconds(),
+	})
 }
 
 // InitializeTrack sets up the player state for a new track.
