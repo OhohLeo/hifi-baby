@@ -39,6 +39,8 @@ type Capabilities interface {
 type Audio struct {
 	tracks       map[uuid.UUID]*Track // tracks holds a slice of all available tracks.
 	activeStream *beep.Ctrl           // ctrlStream controls the pause and resume of the active stream
+	streamer     beep.StreamSeekCloser // the active streamer
+	format       *beep.Format          // the active streamer format
 	volume       *effects.Volume      // volume controls the volume of the playback.
 	storagePath  string               // storagePath is the base path where audio files are stored.
 	playRequests chan uuid.UUID       // playRequests is a channel for play requests
@@ -302,6 +304,8 @@ func (a *Audio) playTrack(id uuid.UUID) error {
 	}
 	defer streamer.Close()
 
+	a.streamer = streamer
+	a.format = &format
 	a.activeStream = &beep.Ctrl{Streamer: streamer, Paused: false}
 	a.volume.Streamer = a.activeStream
 	startTime := time.Now() // Start time of the track
@@ -312,6 +316,8 @@ func (a *Audio) playTrack(id uuid.UUID) error {
 	)
 	defer func() {
 		a.activeStream = nil
+		a.streamer = nil
+		a.format = nil
 		a.volume.Streamer = nil
 		a.playerState.StopTrack()
 		duration := int64(time.Since(startTime).Seconds())
@@ -336,8 +342,8 @@ func (a *Audio) playTrack(id uuid.UUID) error {
 			return nil
 		case <-time.After(time.Second):
 			speaker.Lock()
-			if posStreamer, ok := streamer.(interface{ Position() int }); ok {
-				elapsedTime := format.SampleRate.D(posStreamer.Position()).Round(time.Second)
+			if a.streamer != nil {
+				elapsedTime := format.SampleRate.D(a.streamer.Position()).Round(time.Second)
 				a.playerState.UpdatePosition(elapsedTime)
 				log.Info().Msgf("Position: %s", elapsedTime)
 			} else {
@@ -346,6 +352,23 @@ func (a *Audio) playTrack(id uuid.UUID) error {
 			speaker.Unlock()
 		}
 	}
+}
+
+// SetPosition sets the playback position of the current track.
+func (a *Audio) SetPosition(position time.Duration) error {
+	if a.activeStream == nil || a.streamer == nil || a.format == nil {
+		return fmt.Errorf("no track is currently playing")
+	}
+
+	speaker.Lock()
+	defer speaker.Unlock()
+
+	newPos := a.format.SampleRate.N(position)
+	if err := a.streamer.Seek(newPos); err != nil {
+		return fmt.Errorf("failed to seek track: %w", err)
+	}
+	a.playerState.UpdatePosition(position)
+	return nil
 }
 
 // Stop any currently playing track and resets playback state.
