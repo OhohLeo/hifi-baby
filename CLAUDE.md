@@ -115,3 +115,4 @@ The REST API follows these conventions:
 - Audio playback is sequential (one track at a time)
 - GPIO is hardcoded to gpiochip0, pin 16 in `app.go:41`
 - No tests currently exist in the codebase
+- When changing code, always check with `go build`

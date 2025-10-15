@@ -6,3 +6,6 @@ ui/node_modules
 *.mp3
 *.code-workspace
 *.db
+
+#Ignore cursor AI rules
+.cursor/rules/codacy.mdc

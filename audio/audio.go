@@ -139,6 +139,11 @@ func (a *Audio) AddTrack(file multipart.File, header *multipart.FileHeader) (*Tr
 	return a.addTrack(fullPath)
 }
 
+// AddTrackFromPath adds a track to the audio manager from an existing file path
+func (a *Audio) AddTrackFromPath(path string) (*Track, error) {
+	return a.addTrack(path)
+}
+
 func (a *Audio) addTrack(path string) (*Track, error) {
 	newTrack, err := NewTrack(path)
 	if err != nil {

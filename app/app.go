@@ -4,6 +4,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/OhohLeo/hifi-baby/audio"
+	"github.com/OhohLeo/hifi-baby/bluetooth"
 	"github.com/OhohLeo/hifi-baby/http"
 	"github.com/OhohLeo/hifi-baby/raspberry"
 	"github.com/OhohLeo/hifi-baby/settings"
@@ -11,10 +12,11 @@ import (
 )
 
 type App struct {
-	Server   *http.Server
-	Audio    *audio.Audio
-	Gpio     *raspberry.Gpio
-	Database *sql.Database
+	Server          *http.Server
+	BluetoothServer *bluetooth.Server
+	Audio           *audio.Audio
+	Gpio            *raspberry.Gpio
+	Database        *sql.Database
 }
 
 // NewApp creates a new application instance with initialized components.
@@ -35,11 +37,18 @@ func NewApp(cfg *Config, settings *settings.Settings) (*App, error) {
 
 	server := http.NewServer(audioInstance, cfg.Server, settings, database)
 
+	// Initialize Bluetooth server
+	bleServer, err := bluetooth.NewServer(audioInstance, settings, database, cfg.Bluetooth)
+	if err != nil {
+		return nil, err
+	}
+
 	app := &App{
-		Server:   server,
-		Audio:    audioInstance,
-		Gpio:     raspberry.NewGpio("gpiochip0", 16),
-		Database: database,
+		Server:          server,
+		BluetoothServer: bleServer,
+		Audio:           audioInstance,
+		Gpio:            raspberry.NewGpio("gpiochip0", 16),
+		Database:        database,
 	}
 
 	return app, nil
@@ -68,7 +77,7 @@ func (app *App) listenToGpio() {
 	}
 }
 
-// Run starts the HTTP server and the audio manager.
+// Run starts the HTTP server, Bluetooth server, and the audio manager.
 func (app *App) Run() error {
 	// Start listening to GPIO events
 	go app.listenToGpio()
@@ -76,6 +85,13 @@ func (app *App) Run() error {
 	// Start the audio management in a goroutine to run it concurrently
 	go app.Audio.Run()
 
-	// Start the HTTP server using the Run() method of Server
+	// Start the Bluetooth server in a goroutine
+	go func() {
+		if err := app.BluetoothServer.Run(); err != nil {
+			log.Error().Err(err).Msg("Bluetooth server error")
+		}
+	}()
+
+	// Start the HTTP server using the Run() method of Server (blocking)
 	return app.Server.Run()
 }
