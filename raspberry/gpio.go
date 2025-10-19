@@ -1,3 +1,5 @@
+//go:build rpi
+
 package raspberry
 
 import (
@@ -71,4 +73,9 @@ func (g *Gpio) Listen(musicControl chan string) error {
 	)
 
 	return err
+}
+
+// IsGpioEnabled returns true for Raspberry Pi platforms.
+func IsGpioEnabled() bool {
+	return true
 }

@@ -66,6 +66,7 @@ func NewServer(
 		r.Post("/", server.addTrack)                              // Add a track
 		r.Delete("/{trackID}", server.removeTrack)                // Remove a track
 		r.Post("/play/{trackID}", server.playTrack)               // Play a track
+		r.Post("/play/position", server.setTrackPosition)         // Set track position
 		r.Post("/pause", server.pauseTrack)                       // Pause the current track
 		r.Post("/resume", server.resumeTrack)                     // Resume the current track
 		r.Post("/stop", server.stopTrack)                         // Stop the current track
@@ -142,6 +143,40 @@ func (s *Server) removeTrack(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) setTrackPosition(w http.ResponseWriter, r *http.Request) {
+	// Check if a track is playing
+	playerState := s.audio.GetPlayerState()
+	if !playerState.IsPlaying || playerState.CurrentTrack == nil {
+		http.Error(w, "No track is currently playing", http.StatusConflict)
+		return
+	}
+
+	var body struct {
+		Position int64 `json:"position"` // Position in seconds
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Compare duration with a tolerance of 1 second
+	trackDurationSeconds := playerState.CurrentTrack.SecondsDuration
+	if body.Position < 0 || trackDurationSeconds < body.Position {
+		http.Error(w, "The provided duration does not match the playing track", http.StatusConflict)
+		return
+	}
+
+	position := time.Duration(body.Position) * time.Second
+
+	if err := s.audio.SetPosition(position); err != nil {
+		http.Error(w, "Failed to set position: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 

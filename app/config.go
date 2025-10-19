@@ -4,14 +4,16 @@ import (
 	"github.com/Netflix/go-env"
 
 	"github.com/OhohLeo/hifi-baby/audio"
+	"github.com/OhohLeo/hifi-baby/bluetooth"
 	"github.com/OhohLeo/hifi-baby/http"
 	"github.com/OhohLeo/hifi-baby/sql"
 )
 
 type Config struct {
-	Audio    audio.Config
-	Database sql.Config
-	Server   http.Config
+	Audio     audio.Config
+	Database  sql.Config
+	Server    http.Config
+	Bluetooth bluetooth.Config
 
 	LogLevel     string `env:"LOG_LEVEL,default=info"`
 	SettingsPath string `env:"SETTINGS_PATH,default=settings.json"`
