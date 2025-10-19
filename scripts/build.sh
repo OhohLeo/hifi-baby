@@ -9,6 +9,11 @@ if [ -n "$1" ]; then
     PLATFORM=$1
 fi
 
+if [ "$2" == "configure" ]; then
+    echo "Forcing ALSA library configuration for $PLATFORM"
+    ./scripts/cross_compile_alsa.sh "$PLATFORM"
+fi
+
 echo "Building for platform: $PLATFORM"
 
 # Common build flags
@@ -32,14 +37,13 @@ case "$PLATFORM" in
         BUILD_FLAGS="$BUILD_FLAGS -tags rpi"
         ;;
     "rpi0")
-        # Raspberry Pi Zero/1
+        # Raspberry Pi Zero 2 (64-bit)
         export CGO_LDFLAGS="-L/home/lmartin/git/hifi-baby/cross-compile/alsa-lib-1.2.9/src/.libs -lasound"
         export CGO_CPPFLAGS="-I/home/lmartin/git/hifi-baby/cross-compile/alsa-lib-1.2.9/include"
         export CGO_ENABLED=1
-        export CC=arm-linux-gnueabihf-gcc
+        export CC=aarch64-linux-gnu-gcc
         export GOOS=linux
-        export GOARCH=arm
-        export GOARM=6
+        export GOARCH=arm64
         BUILD_FLAGS="$BUILD_FLAGS -tags rpi"
         ;;
     "docker")
